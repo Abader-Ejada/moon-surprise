@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Surprise</title>
+
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #000;
+    font-family: Arial, sans-serif;
+}
+
+/* START OVERLAY */
+#start-overlay {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 9999;
+    transition: opacity 1s;
+}
+#start-overlay h1 {
+    animation: pulse 1.5s infinite;
+}
+
+/* SCENE */
+.scene-container {
+    position: absolute;
+    inset: 0;
+    background: #87CEEB;
+    transition: background-color 4s;
+    overflow: hidden;
+}
+.scene-container.night {
+    background: #0d1b2a;
+}
+
+/* STARS */
+.stars {
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(2px 2px at 20px 30px,#fff,transparent),
+        radial-gradient(2px 2px at 80px 120px,#fff,transparent),
+        radial-gradient(2px 2px at 150px 200px,#ddd,transparent);
+    background-size: 250px 250px;
+    opacity: 0;
+    transition: opacity 3s;
+}
+.scene-container.night .stars { opacity: 1; }
+
+/* COMETS */
+.comet {
+    position: absolute;
+    width: 120px;
+    height: 2px;
+    background: linear-gradient(90deg,#fff,transparent);
+    transform: rotate(-45deg);
+    opacity: 0;
+    animation: shoot linear infinite;
+}
+
+@keyframes shoot {
+    0% { transform: translate(0,0) rotate(-45deg); opacity: 1; }
+    100% { transform: translate(-600px,600px) rotate(-45deg); opacity: 0; }
+}
+
+/* ================= SMALL BIRDS WITH FACE ================= */
+.bird-wrapper {
+    position: absolute;
+    left: -80px;
+    animation: flyAcross linear infinite;
+}
+
+.bird-wrapper.one { top: 18%; animation-duration: 14s; }
+.bird-wrapper.two { top: 28%; animation-duration: 18s; transform: scale(0.7); }
+.bird-wrapper.three { top: 38%; animation-duration: 20s; transform: scale(0.6); }
+
+.scene-container.night .bird-wrapper { opacity: 0; }
+
+.bird {
+    width: 18px;
+    height: 12px;
+    background: #222;
+    border-radius: 50%;
+    position: relative;
+}
+
+/* Eye */
+.bird::before {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: #fff;
+    border-radius: 50%;
+    top: 4px;
+    right: 4px;
+}
+
+/* Beak */
+.bird::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 4px solid #ffb347;
+    border-top: 2px solid transparent;
+    border-bottom: 2px solid transparent;
+    right: -4px;
+    top: 4px;
+}
+
+/* Wings */
+.bird-wing {
+    position: absolute;
+    width: 14px;
+    height: 6px;
+    background: #222;
+    border-radius: 50%;
+    top: 3px;
+}
+
+.bird-wing.left {
+    left: -10px;
+    transform-origin: right center;
+    animation: flapLeft .5s infinite alternate;
+}
+.bird-wing.right {
+    right: -10px;
+    transform-origin: left center;
+    animation: flapRight .5s infinite alternate;
+}
+
+@keyframes flapLeft { from {transform: rotate(20deg);} to {transform: rotate(-30deg);} }
+@keyframes flapRight { from {transform: rotate(-20deg);} to {transform: rotate(30deg);} }
+
+@keyframes flyAcross {
+    from { left: -80px; }
+    to { left: 110vw; }
+}
+
+/* SUN */
+.sun {
+    width: 100px;
+    height: 100px;
+    background: #FFD700;
+    border-radius: 50%;
+    position: absolute;
+    top: 10%;
+    right: 20%;
+    box-shadow: 0 0 50px #FFD700;
+    transition: top 4s, opacity 2s;
+}
+.sun.set { top: 120%; opacity: 0; }
+
+/* MOON */
+.moon-wrapper {
+    width: 180px;
+    height: 180px;
+    position: absolute;
+    top: 120%;
+    left: 20%;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid #fff;
+    transition: top 5s, box-shadow 3s;
+}
+.moon-wrapper.rise {
+    top: 15%;
+    box-shadow: 0 0 30px #fff,0 0 60px #ff00ff,0 0 90px #FFD700;
+}
+.moon-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* GUY */
+.guy-container {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 220px;
+    height: 220px;
+}
+.face-img {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    border: 5px solid #fff;
+    position: absolute;
+    transition: opacity 1s, transform 1s;
+}
+#sad-face { opacity: 1; }
+#love-face { opacity: 0; transform: scale(.8); }
+
+.guy-container.in-love #sad-face { opacity: 0; }
+.guy-container.in-love #love-face {
+    opacity: 1;
+    transform: scale(1.1);
+    animation: heartbeat 1s infinite;
+}
+
+@keyframes pulse {
+    50% { transform: scale(1.1); }
+}
+@keyframes heartbeat {
+    0% { transform: scale(1.1); }
+    30% { transform: scale(1.25); }
+    100% { transform: scale(1.1); }
+}
+</style>
+</head>
+
+<body>
+
+<audio id="bg-music" loop>
+    <source src="sound1.mpeg" type="audio/mpeg">
+</audio>
+
+<div id="start-overlay"><h1>Tap screen to start...</h1></div>
+
+<div class="scene-container" id="scene">
+    <div class="stars"></div>
+
+    <!-- Birds -->
+    <div class="bird-wrapper one">
+        <div class="bird">
+            <div class="bird-wing left"></div>
+            <div class="bird-wing right"></div>
+        </div>
+    </div>
+    <div class="bird-wrapper two">
+        <div class="bird">
+            <div class="bird-wing left"></div>
+            <div class="bird-wing right"></div>
+        </div>
+    </div>
+    <div class="bird-wrapper three">
+        <div class="bird">
+            <div class="bird-wing left"></div>
+            <div class="bird-wing right"></div>
+        </div>
+    </div>
+
+    <div class="sun" id="sun"></div>
+
+    <div class="moon-wrapper" id="moon">
+        <img src="1.jpeg">
+    </div>
+
+    <div class="guy-container" id="guy">
+        <img src="sad 3.jfif" class="face-img" id="sad-face">
+        <img src="love 3.jfif" class="face-img" id="love-face">
+    </div>
+</div>
+
+<script>
+const overlay = document.getElementById('start-overlay');
+const audio = document.getElementById('bg-music');
+const scene = document.getElementById('scene');
+const sun = document.getElementById('sun');
+const moon = document.getElementById('moon');
+const guy = document.getElementById('guy');
+
+overlay.onclick = () => {
+    audio.play();
+    overlay.style.opacity = 0;
+    setTimeout(()=>overlay.remove(),1000);
+
+    setTimeout(()=>{
+        scene.classList.add('night');
+        sun.classList.add('set');
+        createComets(13); // ⭐ 5–6x more comets
+    },2500);
+
+    setTimeout(()=>moon.classList.add('rise'),5000);
+    setTimeout(()=>guy.classList.add('in-love'),8000);
+};
+
+function createComets(count) {
+    for(let i=0;i<count;i++){
+        const c=document.createElement('div');
+        c.className='comet';
+        c.style.top=Math.random()*80+'%';
+        c.style.left=Math.random()*100+'%';
+        c.style.animationDuration=3+Math.random()*4+'s';
+        c.style.animationDelay=Math.random()*6+'s';
+        scene.appendChild(c);
+    }
+}
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////
+
+
+
+<!-- 
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Surprise</title>
+
+<style>
+/* ================= BASE ================= */
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #000;
+    font-family: Arial, sans-serif;
+}
+
+/* ================= START SCREEN ================= */
+#start-overlay {
+    position: fixed;
+    inset: 0;
+    background: black;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    cursor: pointer;
+}
+#start-overlay h1 {
+    animation: pulse 1.5s infinite;
+}
+
+/* ================= SCENE ================= */
+.scene-container {
+    position: absolute;
+    inset: 0;
+    background: #87CEEB;
+    transition: background-color 4s;
+    overflow: hidden;
+}
+.scene-container.night {
+    background: #0d1b2a;
+}
+
+/* ================= STARS ================= */
+.stars {
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(2px 2px at 20px 30px, #fff, transparent),
+        radial-gradient(2px 2px at 80px 120px, #eee, transparent),
+        radial-gradient(1px 1px at 140px 200px, #ddd, transparent);
+    background-size: 200px 200px;
+    opacity: 0;
+    transition: opacity 3s;
+}
+.scene-container.night .stars {
+    opacity: 1;
+}
+
+/* ================= COMETS ================= */
+.comet {
+    position: absolute;
+    width: 140px;
+    height: 3px;
+    background: linear-gradient(90deg, white, transparent);
+    transform: rotate(-45deg);
+    opacity: 0;
+}
+
+.scene-container.night .comet {
+    animation: shoot linear infinite;
+}
+
+.comet:nth-child(2) { top:10%; left:90%; animation-duration:4s; animation-delay:1s;}
+.comet:nth-child(3) { top:25%; left:80%; animation-duration:6s; animation-delay:3s;}
+.comet:nth-child(4) { top:40%; left:95%; animation-duration:5s; animation-delay:2s;}
+.comet:nth-child(5) { top:55%; left:85%; animation-duration:7s; animation-delay:4s;}
+.comet:nth-child(6) { top:15%; left:70%; animation-duration:6s; animation-delay:5s;}
+.comet:nth-child(7) { top:65%; left:90%; animation-duration:8s; animation-delay:6s;}
+.comet:nth-child(8) { top:35%; left:75%; animation-duration:5s; animation-delay:2.5s;}
+
+@keyframes shoot {
+    0%   { transform: translate(0,0) rotate(-45deg); opacity:1; }
+    100% { transform: translate(-600px,600px) rotate(-45deg); opacity:0; }
+}
+
+/* ================= BIRDS (PNG IMAGE) ================= */
+/* .bird {
+    position: absolute;
+    top: 20%;
+    left: -150px;
+    width: 120px;
+    animation: fly linear infinite;
+    z-index: 2;
+}
+
+.bird img {
+    width: 100%;
+    animation: float 3s ease-in-out infinite;
+}
+
+.bird.one { top:18%; animation-duration:14s; }
+.bird.two { top:28%; animation-duration:18s; transform: scale(0.8);}
+.bird.three { top:38%; animation-duration:16s; transform: scale(0.6);}
+
+.scene-container.night .bird {
+    opacity: 0;
+}
+
+@keyframes fly {
+    from { left:-150px; }
+    to   { left:110vw; }
+}
+
+@keyframes float {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+} */
+
+
+/* ================= REALISTIC ROUNDED BIRDS ================= */
+.bird {
+    position: absolute;
+    width: 40px;
+    height: 20px;
+    border-radius: 50%;
+    background: #222;
+    top: 20%;
+    left: -100px;
+    animation: fly linear infinite;
+    z-index: 2;
+}
+
+.bird::before,
+.bird::after {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 10px;
+    background: #222;
+    border-radius: 100% 100% 0 0;
+    top: 4px;
+}
+
+.bird::before {
+    left: -18px;
+    transform-origin: right center;
+    animation: flap-left 0.5s infinite ease-in-out;
+}
+
+.bird::after {
+    right: -18px;
+    transform-origin: left center;
+    animation: flap-right 0.5s infinite ease-in-out;
+}
+
+.bird.one { top:18%; animation-duration:14s; }
+.bird.two { top:28%; animation-duration:18s; transform: scale(0.8);}
+.bird.three { top:38%; animation-duration:16s; transform: scale(0.6);}
+
+.scene-container.night .bird {
+    opacity: 0;
+}
+
+@keyframes flap-left {
+    0% { transform: rotate(20deg); }
+    100% { transform: rotate(-35deg); }
+}
+@keyframes flap-right {
+    0% { transform: rotate(-20deg); }
+    100% { transform: rotate(35deg); }
+}
+
+@keyframes fly {
+    from { left: -120px; }
+    to { left: 110vw; }
+}
+
+
+/* ================= SUN ================= */
+.sun {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    background: gold;
+    border-radius: 50%;
+    top: 10%;
+    right: 20%;
+    box-shadow: 0 0 50px gold;
+    transition: top 4s, opacity 2s;
+}
+.sun.set {
+    top: 120%;
+    opacity: 0;
+}
+
+/* ================= MOON ================= */
+.moon-wrapper {
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    top: 120%;
+    left: 20%;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid white;
+    transition: top 5s, box-shadow 3s;
+}
+.moon-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.moon-wrapper.rise {
+    top: 15%;
+    box-shadow: 0 0 40px #fff, 0 0 80px violet, 0 0 120px gold;
+}
+
+/* ================= GUY ================= */
+.guy-container {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 220px;
+    height: 220px;
+}
+
+.face-img {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    border: 5px solid white;
+    transition: opacity 1s, transform 1s;
+}
+
+#love-face { opacity:0; }
+
+.guy-container.in-love #sad-face { opacity:0; }
+.guy-container.in-love #love-face {
+    opacity:1;
+    transform: scale(1.1);
+    animation: heartbeat 1s infinite;
+    border-color: #ff4d4d;
+}
+
+/* ================= ANIMATIONS ================= */
+@keyframes pulse {
+    50% { transform: scale(1.1); }
+}
+
+@keyframes heartbeat {
+    0%{transform:scale(1.1);}
+    30%{transform:scale(1.25);}
+    60%{transform:scale(1.1);}
+}
+</style>
+</head>
+
+<body>
+
+<audio id="bg-music" loop>
+    <source src="sound1.mpeg" type="audio/mpeg">
+</audio>
+
+<div id="start-overlay"><h1>Tap screen to start...</h1></div>
+
+<div class="scene-container" id="scene">
+
+    <div class="stars"></div>
+
+    <div class="comet"></div><div class="comet"></div><div class="comet"></div>
+    <div class="comet"></div><div class="comet"></div><div class="comet"></div>
+    <div class="comet"></div>
+
+    <div class="bird one"><img src="data:image/png;base64,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" /></div>
+    <div class="bird two"><img src="data:image/png;base64,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" /></div>
+    <div class="bird three"><img src="data:image/png;base64,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" /></div> 
+
+    <div class="bird one"></div>
+<div class="bird two"></div>
+<div class="bird three"></div>
+
+    
+    <div class="sun" id="sun"></div>
+
+    <div class="moon-wrapper" id="moon">
+        <img src="1.jpeg">
+    </div>
+
+    <div class="guy-container" id="guy">
+        <img src="sad 3.jfif" id="sad-face" class="face-img">
+        <img src="love 3.jfif" id="love-face" class="face-img">
+    </div>
+</div>
+
+<script>
+const overlay = document.getElementById('start-overlay');
+const audio = document.getElementById('bg-music');
+const scene = document.getElementById('scene');
+const sun = document.getElementById('sun');
+const moon = document.getElementById('moon');
+const guy = document.getElementById('guy');
+
+overlay.onclick = () => {
+    audio.play();
+    overlay.style.display = 'none';
+
+    setTimeout(()=>{ scene.classList.add('night'); sun.classList.add('set'); }, 2500);
+    setTimeout(()=>{ moon.classList.add('rise'); }, 5000);
+    setTimeout(()=>{ guy.classList.add('in-love'); }, 8000);
+    setTimeout(() => {
+    scene.classList.add('night');
+    sun.classList.add('set');
+    createComets(5); // ⭐ 5 comets at night
+}, 2500);
+
+};
+
+function createComets(count = 5) {
+    for (let i = 0; i < count; i++) {
+        const comet = document.createElement('div');
+        comet.className = 'comet';
+
+        comet.style.top = Math.random() * 70 + '%';
+        comet.style.left = Math.random() * 100 + '%';
+        comet.style.animationDuration = 4 + Math.random() * 4 + 's';
+        comet.style.animationDelay = Math.random() * 5 + 's';
+
+        document.getElementById('scene').appendChild(comet);
+    }
+}
+</script>
+
+</body>
+</html>
+ -->
